@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  # Backend Service (Django)
+  backend:
+    build:
+      context: ./quiz_project  # Path to the backend code in quiz_project/quiz_api
+    container_name: django-backend
+    environment:
+      - DEBUG=False
+      - DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
+      - DJANGO_SECRET_KEY=your_secret_key_here
+    ports:
+      - "8000:8000"  # Expose backend on port 8000
+    depends_on:
+      - db  # Ensure the backend waits for the database to be ready
+    volumes:
+      - ./quiz_project:/app  # Mount the entire quiz_project directory (where manage.py is)
+    working_dir: /app  # Set the working directory to /app (which corresponds to quiz_project)
+    command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]  # Explicitly run manage.py from the correct location
+    networks:
+      - app-network
+
+  # Frontend Service (React)
+  frontend:
+    build:
+      context: ./quiz-frontend  # Path to the frontend directory
+    container_name: react-frontend
+    ports:
+      - "3000:3000"  # Expose React frontend on port 3000
+    environment:
+      - REACT_APP_API_BASE_URL=http://localhost:8000/api  # Set the backend API URL for the frontend
+    depends_on:
+      - backend  # Ensure the frontend waits for the backend to be ready
+    volumes:
+      - ./quiz-frontend:/app  # Mount the entire frontend directory into the container
+    working_dir: /app  # Set the working directory to /app inside the container
+    networks:
+      - app-network
+
+  # Database Service (PostgreSQL)
+  db:
+    image: postgres:13
+    container_name: postgres-db
+    environment:
+      POSTGRES_DB: quizapp
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  # Persist database data
+    networks:
+      - app-network
+    ports:
+      - "5432:5432"  # Expose PostgreSQL on port 5432
+
+networks:
+  app-network:
+    driver: bridge  # Define the network for container communication
+
+volumes:
+  postgres_data:
+    driver: local  # Define a volume for PostgreSQL data persistence
