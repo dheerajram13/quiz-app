@@ -1,0 +1,124 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    name: Test & Quality Check
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11']
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r quiz_project/requirements.txt
+
+    - name: Run migrations
+      working-directory: ./quiz_project
+      run: |
+        python manage.py makemigrations --check --dry-run
+        python manage.py migrate
+
+    - name: Run tests with coverage
+      working-directory: ./quiz_project
+      run: |
+        pytest --cov=quiz_api --cov-report=xml --cov-report=term-missing
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./quiz_project/coverage.xml
+        fail_ci_if_error: false
+
+    - name: Lint with flake8
+      working-directory: ./quiz_project
+      run: |
+        flake8 quiz_api/ quiz_project/
+
+    - name: Check code formatting with black
+      working-directory: ./quiz_project
+      run: |
+        black --check quiz_api/ quiz_project/
+
+    - name: Sort imports with isort
+      working-directory: ./quiz_project
+      run: |
+        isort --check-only quiz_api/ quiz_project/
+
+    - name: Type check with mypy
+      working-directory: ./quiz_project
+      run: |
+        mypy quiz_api/ || true  # Don't fail on mypy errors initially
+
+  frontend-test:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '16'
+        cache: 'npm'
+        cache-dependency-path: quiz-frontend/package-lock.json
+
+    - name: Install dependencies
+      working-directory: ./quiz-frontend
+      run: npm ci
+
+    - name: Run tests
+      working-directory: ./quiz-frontend
+      run: npm test -- --coverage --watchAll=false
+
+    - name: Build
+      working-directory: ./quiz-frontend
+      run: npm run build
+
+  docker-build:
+    name: Docker Build Test
+    runs-on: ubuntu-latest
+    needs: [test, frontend-test]
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Build Docker images
+      run: docker-compose build
+
+    - name: Start services
+      run: docker-compose up -d
+
+    - name: Wait for services
+      run: sleep 10
+
+    - name: Check service health
+      run: |
+        docker-compose ps
+        curl --retry 5 --retry-delay 5 --retry-connrefused http://localhost:8000/api/schema/ || true
+
+    - name: Stop services
+      run: docker-compose down

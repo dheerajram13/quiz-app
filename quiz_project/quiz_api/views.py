@@ -1,89 +1,212 @@
+"""
+API Views for quiz application.
+
+This module contains API viewsets that delegate business logic to services,
+following the clean architecture pattern and SOLID principles.
+"""
+
 import logging
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from django.db.models import Avg, Count, Max
-from .models import Quiz, Question, Answer, UserQuizAttempt
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
+
+from .models import Quiz
 from .serializers import (
     QuizSerializer,
+    QuizDetailSerializer,
     QuizAnswerSubmissionSerializer,
-    UserQuizAttemptSerializer,
-    UserStatsSerializer
+    UserStatsSerializer,
+    QuizSubmissionResponseSerializer
 )
+from .services import QuizService, UserStatsService
+from .exceptions import QuizNotFoundException, InvalidSubmissionError
 
 logger = logging.getLogger(__name__)
 
+
 class QuizViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    ViewSet for quiz operations.
+
+    This viewset delegates all business logic to services,
+    keeping views thin and focused on HTTP concerns only.
+
+    Endpoints:
+        GET /api/quizzes/ - List all quizzes
+        GET /api/quizzes/{id}/ - Retrieve quiz details
+        POST /api/quizzes/{id}/submit/ - Submit quiz answers
+        GET /api/quizzes/user_stats/ - Get user statistics
+    """
+
     queryset = Quiz.objects.all()
     serializer_class = QuizSerializer
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
-    def list(self, request, *args, **kwargs):
-        print("request", request.data)
-        return super().list(request, *args, **kwargs)
+    def get_serializer_class(self):
+        """Return appropriate serializer class based on action."""
+        if self.action == 'retrieve':
+            return QuizDetailSerializer
+        return QuizSerializer
 
+    @extend_schema(
+        summary="List all available quizzes",
+        description="Retrieve a list of all quizzes available to the authenticated user.",
+        responses={200: QuizSerializer(many=True)}
+    )
+    def list(self, request, *args, **kwargs):
+        """
+        List all available quizzes.
+
+        Returns:
+            Response with list of quizzes
+        """
+        logger.info(f"User {request.user.id} requested quiz list")
+        quizzes = QuizService.get_all_quizzes()
+        serializer = self.get_serializer(quizzes, many=True)
+        return Response(serializer.data)
+
+    @extend_schema(
+        summary="Retrieve quiz details",
+        description="Get detailed information about a specific quiz including questions and answers.",
+        responses={
+            200: QuizDetailSerializer,
+            404: {"description": "Quiz not found"}
+        }
+    )
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Retrieve detailed quiz information.
+
+        Returns:
+            Response with quiz details including questions
+        """
+        try:
+            quiz = QuizService.get_quiz(kwargs.get('pk'))
+            serializer = self.get_serializer(quiz)
+            logger.info(f"User {request.user.id} retrieved quiz {quiz.id}")
+            return Response(serializer.data)
+        except QuizNotFoundException as e:
+            logger.warning(f"Quiz not found: {kwargs.get('pk')}")
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+    @extend_schema(
+        summary="Submit quiz answers",
+        description="Submit answers for a quiz and receive calculated score.",
+        request=QuizAnswerSubmissionSerializer,
+        responses={
+            200: QuizSubmissionResponseSerializer,
+            400: {"description": "Invalid submission"},
+            404: {"description": "Quiz not found"}
+        },
+        examples=[
+            OpenApiExample(
+                "Valid submission",
+                value={
+                    "quiz_id": 1,
+                    "answers": {
+                        "1": [1],
+                        "2": [2, 3],
+                        "3": [4]
+                    }
+                },
+                request_only=True
+            )
+        ]
+    )
     @action(detail=True, methods=['post'])
     def submit(self, request, pk=None):
+        """
+        Submit quiz answers and calculate score.
+
+        This endpoint validates the submission, calculates the score,
+        and saves the attempt to the database.
+
+        Args:
+            request: HTTP request containing answer submission
+
+        Returns:
+            Response with score information
+        """
+        # Validate input
         serializer = QuizAnswerSubmissionSerializer(data=request.data)
         if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
-        quiz = self.get_object()
-        submitted_answers = serializer.validated_data['answers']
-        total_points = 0
-        earned_points = 0
-        
-        for question in quiz.questions.all():
-            total_points += question.points
-            question_answers = submitted_answers.get(str(question.id), [])
-            
-            if question.question_type == 'single':
-                correct_answer = question.answers.filter(is_correct=True).first()
-                if correct_answer and correct_answer.id in question_answers:
-                    earned_points += question.points
-                    
-            elif question.question_type == 'multi':
-                correct_answers = set(question.answers.filter(is_correct=True)
-                                   .values_list('id', flat=True))
-                if set(question_answers) == correct_answers:
-                    earned_points += question.points
-                    
-            elif question.question_type == 'select_words':
-                # For select_words, we'll check if all correct words are selected
-                # regardless of order
-                correct_answers = set(question.answers.filter(is_correct=True)
-                                   .values_list('id', flat=True))
-                if set(question_answers) == correct_answers:
-                    earned_points += question.points
+            logger.warning(
+                f"Invalid submission from user {request.user.id}: {serializer.errors}"
+            )
+            return Response(
+                serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-        score_percentage = (earned_points / total_points) * 100 if total_points > 0 else 0
-        
-        # Save the attempt
-        UserQuizAttempt.objects.create(
-            user=request.user,
-            quiz=quiz,
-            score=score_percentage
-        )
-        
-        return Response({
-            'score': score_percentage,
-            'total_points': total_points,
-            'earned_points': earned_points
-        })
+        try:
+            # Process submission via service layer
+            result = QuizService.submit_quiz(
+                user=request.user,
+                quiz_id=int(pk),
+                submitted_answers=serializer.validated_data['answers']
+            )
 
-    @action(detail=False)
+            logger.info(
+                f"User {request.user.id} completed quiz {pk} "
+                f"with score {result['score']}%"
+            )
+
+            response_serializer = QuizSubmissionResponseSerializer(result)
+            return Response(response_serializer.data)
+
+        except QuizNotFoundException as e:
+            logger.error(f"Quiz not found during submission: {pk}")
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except InvalidSubmissionError as e:
+            logger.error(f"Invalid submission for quiz {pk}: {str(e)}")
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            logger.exception(f"Unexpected error during quiz submission: {str(e)}")
+            return Response(
+                {'error': 'An unexpected error occurred'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    @extend_schema(
+        summary="Get user statistics",
+        description="Retrieve statistics about the authenticated user's quiz performance.",
+        responses={200: UserStatsSerializer}
+    )
+    @action(detail=False, methods=['get'])
     def user_stats(self, request):
-        user_attempts = UserQuizAttempt.objects.filter(user=request.user)
-        stats = {
-            'total_quizzes': user_attempts.count(),
-            'average_score': user_attempts.aggregate(Avg('score'))['score__avg'] or 0,
-            'highest_score': user_attempts.aggregate(Max('score'))['score__max'] or 0,
-            'recent_attempts': user_attempts[:5]
-        }
-        
-        serializer = UserStatsSerializer(stats)
-        return Response(serializer.data)
+        """
+        Get user statistics.
+
+        Returns comprehensive statistics about the user's quiz performance
+        including total quizzes taken, average score, and recent attempts.
+
+        Returns:
+            Response with user statistics
+        """
+        try:
+            stats_service = UserStatsService(request.user)
+            stats = stats_service.get_statistics()
+
+            serializer = UserStatsSerializer(stats)
+            logger.info(f"Statistics retrieved for user {request.user.id}")
+            return Response(serializer.data)
+
+        except Exception as e:
+            logger.exception(f"Error retrieving stats for user {request.user.id}: {str(e)}")
+            return Response(
+                {'error': 'Failed to retrieve statistics'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
