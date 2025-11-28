@@ -56,7 +56,7 @@ A production-ready, full-stack quiz application built with **Django REST Framewo
 
 The application follows **Clean Architecture** principles with clear separation between layers:
 
-![System Architecture](docs/architecture.svg)
+![System Architecture](Architecture.png)
 
 ### Architecture Layers
 
