@@ -34,6 +34,7 @@ services:
       - backend  # Ensure the frontend waits for the backend to be ready
     volumes:
       - ./quiz-frontend:/app  # Mount the entire frontend directory into the container
+      - /app/node_modules  # Use anonymous volume to preserve node_modules from image
     working_dir: /app  # Set the working directory to /app inside the container
     networks:
       - app-network

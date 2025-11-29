@@ -13,13 +13,8 @@ RUN npm install
 # Copy the rest of the frontend code
 COPY . /app/
 
-# Build the React app for production
-RUN npm run build
-
-# Install serve to serve the built app
-RUN npm install -g serve
-
 # Expose port 3000 for the React app
 EXPOSE 3000
 
+# Start the development server
 CMD ["npm", "start"] 

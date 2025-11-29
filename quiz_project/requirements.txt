@@ -43,5 +43,5 @@ djangorestframework-stubs==3.14.5
 isort==5.13.2
 
 # Development tools
-ipython==8.19.0
+ipython==8.18.1
 django-debug-toolbar==4.2.0
