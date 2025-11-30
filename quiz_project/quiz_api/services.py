@@ -13,6 +13,7 @@ from django.contrib.auth.models import User
 
 from .models import Quiz, Question, UserQuizAttempt
 from .exceptions import QuizNotFoundException, InvalidSubmissionError
+from .scoring_strategies import ScoringStrategyFactory
 
 
 logger = logging.getLogger(__name__)
@@ -69,6 +70,9 @@ class QuizScoringService:
         """
         Check if the submitted answers for a question are correct.
 
+        Uses the Strategy Pattern to delegate scoring logic to the appropriate
+        strategy based on question type.
+
         Args:
             question: The question being evaluated
             submitted_answer_ids: List of submitted answer IDs
@@ -76,21 +80,12 @@ class QuizScoringService:
         Returns:
             True if the answer is correct, False otherwise
         """
-        correct_answer_ids = set(
-            question.answers.filter(is_correct=True).values_list('id', flat=True)
-        )
-        submitted_ids = set(submitted_answer_ids)
-
-        if question.question_type == 'single':
-            return (
-                len(submitted_ids) == 1 and
-                submitted_ids == correct_answer_ids
-            )
-        elif question.question_type in ['multi', 'select_words']:
-            return submitted_ids == correct_answer_ids
-
-        logger.warning(f"Unknown question type: {question.question_type}")
-        return False
+        try:
+            strategy = ScoringStrategyFactory.get_strategy(question.question_type)
+            return strategy.is_correct(question, submitted_answer_ids)
+        except ValueError as e:
+            logger.error(f"Error getting scoring strategy: {e}")
+            return False
 
     @staticmethod
     def _calculate_percentage(earned: int, total: int) -> Decimal:

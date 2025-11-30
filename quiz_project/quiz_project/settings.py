@@ -12,6 +12,7 @@ import os
 from pathlib import Path
 from datetime import timedelta
 from dotenv import load_dotenv
+from django.core.exceptions import ImproperlyConfigured
 
 # Load environment variables
 load_dotenv()
@@ -21,15 +22,20 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv(
-    'DJANGO_SECRET_KEY',
-    'django-insecure-m8*$k%768bj0&^akgicw#=o#27pxpu+0$v0(#xhz58xq6^ay@n'
-)
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
+
+# If SECRET_KEY is not set and we're not in DEBUG mode, raise an error
+if not SECRET_KEY:
+    if os.getenv('DEBUG', 'False') != 'True':
+        raise ImproperlyConfigured('DJANGO_SECRET_KEY environment variable must be set in production')
+    # For development only, use a default key
+    SECRET_KEY = 'django-insecure-dev-key-CHANGE-ME-IN-PRODUCTION'
+    print('WARNING: Using development SECRET_KEY. Set DJANGO_SECRET_KEY environment variable for production!')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'True') == 'True'
+DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 
 # CORS Configuration
@@ -80,6 +86,15 @@ REST_FRAMEWORK = {
         'django_filters.rest_framework.DjangoFilterBackend',
     ],
     'EXCEPTION_HANDLER': 'quiz_api.exceptions.custom_exception_handler',
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '100/hour',  # 100 requests per hour for anonymous users
+        'user': '1000/hour',  # 1000 requests per hour for authenticated users
+        'login': '10/hour',  # Custom throttle for login attempts
+    },
 }
 
 
@@ -267,3 +282,26 @@ LOGGING = {
 # Create logs directory if it doesn't exist
 LOGS_DIR = BASE_DIR / 'logs'
 LOGS_DIR.mkdir(exist_ok=True)
+
+
+# Security Settings
+if not DEBUG:
+    # HTTPS settings
+    SECURE_SSL_REDIRECT = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+    # HSTS settings
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+
+    # Cookie security
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    CSRF_COOKIE_HTTPONLY = True
+
+    # Additional security headers
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_BROWSER_XSS_FILTER = True
+    X_FRAME_OPTIONS = 'DENY'

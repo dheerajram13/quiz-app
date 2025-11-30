@@ -1,6 +1,8 @@
 import axios from 'axios';
+import { storage } from '../constants/storage';
 
-const API_URL = 'http://localhost:8000/api/';
+// Use environment variable for API URL with fallback for development
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -10,29 +12,30 @@ const api = axios.create({
 });
 
 // Function to refresh the access token
-const refreshToken = async () => {
-  const refresh = localStorage.getItem('refresh_token');
+const refreshToken = async (): Promise<string | null> => {
+  const refresh = storage.getRefreshToken();
   if (refresh) {
     try {
       const response = await axios.post(`${API_URL}token/refresh/`, { refresh });
       const { access } = response.data;
-      localStorage.setItem('access_token', access); 
+      storage.setAccessToken(access);
       api.defaults.headers.common['Authorization'] = `Bearer ${access}`;
       return access;
     } catch (error) {
       console.error('Error refreshing token:', error);
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-      return null; // If refresh fails, return null
+      storage.clearTokens();
+      // Redirect to login page
+      window.location.href = '/login';
+      return null;
     }
   }
-  return null; // If no refresh token found, return null
+  return null;
 };
 
 // Add the access token to request headers if available
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('access_token');
+    const token = storage.getAccessToken();
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
