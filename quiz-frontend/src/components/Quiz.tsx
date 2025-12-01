@@ -43,7 +43,10 @@ const Quiz: React.FC = () => {
   };
 
   const getAnsweredCount = () => {
-    return Object.keys(answers).filter(key => answers[parseInt(key)].length > 0).length;
+    return Object.keys(answers).filter(key => {
+      const answerArray = answers[parseInt(key)];
+      return answerArray && answerArray.length > 0;
+    }).length;
   };
 
   if (loading) {

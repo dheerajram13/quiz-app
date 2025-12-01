@@ -18,6 +18,7 @@ A production-ready, full-stack quiz application built with **Django REST Framewo
 - [Technology Stack](#-technology-stack)
 - [Design Patterns & Principles](#-design-patterns--principles)
 - [Project Structure](#-project-structure)
+- [Screenshots](#-screenshots)
 - [Getting Started](#-getting-started)
 - [API Documentation](#-api-documentation)
 - [Testing](#-testing)
@@ -239,6 +240,26 @@ quiz-app/
 ├── docker-compose.yml           # Multi-container orchestration
 └── README.md
 ```
+
+---
+
+## 📸 Screenshots
+
+### Home Page
+![Home Page after login](images/Home.png)
+*Clean and modern login interface with gradient design*
+
+### Quiz Selection
+![Quiz Selection](images/Quiz.png)
+*Browse available quizzes with card-based layout*
+
+### Quiz Completion
+![Quiz Completion](images/Quiz%20Completion.png)
+*Interactive quiz interface with real-time answer tracking and beautiful completion modal*
+
+### User Statistics
+![User Statistics](images/User%20Statistics.png)
+*Comprehensive dashboard showing performance metrics and achievement badges*
 
 ---
 
