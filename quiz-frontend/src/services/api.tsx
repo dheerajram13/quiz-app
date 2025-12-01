@@ -2,7 +2,7 @@ import axios from 'axios';
 import { storage } from '../constants/storage';
 
 // Use environment variable for API URL with fallback for development
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api/';
 
 const api = axios.create({
   baseURL: API_URL,

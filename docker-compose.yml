@@ -7,7 +7,7 @@ services:
       context: ./quiz_project  # Path to the backend code in quiz_project/quiz_api
     container_name: django-backend
     environment:
-      - DEBUG=False
+      - DEBUG=True
       - DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
       - DJANGO_SECRET_KEY=your_secret_key_here
     ports:

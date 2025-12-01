@@ -12,22 +12,14 @@ const UserStats: React.FC = () => {
 
     useEffect(() => {
         const fetchStats = async () => {
-            const token = localStorage.getItem('token'); // Retrieve the token from local storage
-            if (!token) {
-                console.error("No token found");
-                return;
-            }
-
             try {
-                const response = await api.get('/quizzes/user_stats/', {
-                    headers: { Authorization: `Bearer ${token}` } // Include the token in the headers
-                });
+                const response = await api.get('/quizzes/user_stats/');
                 setStats(response.data as UserStatsData);
             } catch (error) {
                 console.error("Error fetching user stats:", error);
             }
         };
-        
+
         fetchStats();
     }, []);
 

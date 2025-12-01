@@ -12,18 +12,8 @@ const QuizList: React.FC = () => {
 
   useEffect(() => {
     const fetchQuizzes = async () => {
-      const token = localStorage.getItem('token');
-      console.log('Login:', token);
-
-      if (!token) {
-        setError('No token found, please login.');
-        return;
-      }
-
       try {
-        const response = await api.get('/quizzes/', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const response = await api.get('/quizzes/');
         console.log('res:', response);
         setQuizzes(response.data);
       } catch (error) {

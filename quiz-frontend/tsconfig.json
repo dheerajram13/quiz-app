@@ -19,7 +19,6 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-
     /* Additional Strict Type-Checking Options */
     "noImplicitAny": true,
     "strictNullChecks": true,
@@ -28,12 +27,17 @@
     "strictPropertyInitialization": true,
     "noImplicitThis": true,
     "alwaysStrict": true,
-
     /* Additional Checks */
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noImplicitReturns": true,
-    "noUncheckedIndexedAccess": true
+    "noUncheckedIndexedAccess": true,
+    "types": [
+      "node",
+      "jest",
+      "react",
+      "react-dom"
+    ]
   },
   "include": [
     "src"

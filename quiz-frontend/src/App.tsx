@@ -21,38 +21,42 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   return isAuthenticated ? children : <Navigate to="/login" />;
 };
 
+import Layout from './components/Layout';
+
 const AppRoutes: React.FC = () => {
   const { isAuthenticated } = useAuth();
 
   return (
-    <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route
-        path="/quizzes"
-        element={
-          <ProtectedRoute>
-            <QuizList />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/quizzes/:id"
-        element={
-          <ProtectedRoute>
-            <Quiz />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/user-stats"
-        element={
-          <ProtectedRoute>
-            <UserStats />
-          </ProtectedRoute>
-        }
-      />
-      <Route path="/" element={<Navigate to={isAuthenticated ? "/quizzes" : "/login"} />} />
-    </Routes>
+    <Layout>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route
+          path="/quizzes"
+          element={
+            <ProtectedRoute>
+              <QuizList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/quizzes/:id"
+          element={
+            <ProtectedRoute>
+              <Quiz />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/user-stats"
+          element={
+            <ProtectedRoute>
+              <UserStats />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/" element={<Navigate to={isAuthenticated ? "/quizzes" : "/login"} />} />
+      </Routes>
+    </Layout>
   );
 };
 
