@@ -1,11 +1,7 @@
 # Quiz Application
-
-[![CI/CD Pipeline](https://github.com/yourusername/quiz-app/workflows/CI%2FCD%20Pipeline/badge.svg)](https://github.com/yourusername/quiz-app/actions)
-[![codecov](https://codecov.io/gh/yourusername/quiz-app/branch/main/graph/badge.svg)](https://codecov.io/gh/yourusername/quiz-app)
 [![Python Version](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11-blue)](https://www.python.org/downloads/)
 [![Django Version](https://img.shields.io/badge/django-4.2.7-green.svg)](https://www.djangoproject.com/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A production-ready, full-stack quiz application built with **Django REST Framework** and **React TypeScript**, demonstrating best practices in software engineering including **SOLID principles**, **design patterns**, and **clean architecture**.
 
@@ -15,10 +11,10 @@ A production-ready, full-stack quiz application built with **Django REST Framewo
 
 - [Features](#-features)
 - [System Architecture](#-system-architecture)
+- [Screenshots](#-screenshots)
 - [Technology Stack](#-technology-stack)
 - [Design Patterns & Principles](#-design-patterns--principles)
 - [Project Structure](#-project-structure)
-- [Screenshots](#-screenshots)
 - [Getting Started](#-getting-started)
 - [API Documentation](#-api-documentation)
 - [Testing](#-testing)
@@ -88,6 +84,27 @@ The application follows **Clean Architecture** principles with clear separation 
    - Data integrity constraints
 
 ---
+
+## 📸 Screenshots
+
+### Home Page
+![Home Page after login](images/Home.png)
+*Clean and modern login interface with gradient design*
+
+### Quiz Selection
+![Quiz Selection](images/Quiz.png)
+*Browse available quizzes with card-based layout*
+
+### Quiz Completion
+![Quiz Completion](images/Quiz%20Completion.png)
+*Interactive quiz interface with real-time answer tracking and beautiful completion modal*
+
+### User Statistics
+![User Statistics](images/User%20Statistics.png)
+*Comprehensive dashboard showing performance metrics and achievement badges*
+
+---
+
 
 ## 🛠️ Technology Stack
 
@@ -240,26 +257,6 @@ quiz-app/
 ├── docker-compose.yml           # Multi-container orchestration
 └── README.md
 ```
-
----
-
-## 📸 Screenshots
-
-### Home Page
-![Home Page after login](images/Home.png)
-*Clean and modern login interface with gradient design*
-
-### Quiz Selection
-![Quiz Selection](images/Quiz.png)
-*Browse available quizzes with card-based layout*
-
-### Quiz Completion
-![Quiz Completion](images/Quiz%20Completion.png)
-*Interactive quiz interface with real-time answer tracking and beautiful completion modal*
-
-### User Statistics
-![User Statistics](images/User%20Statistics.png)
-*Comprehensive dashboard showing performance metrics and achievement badges*
 
 ---
 
