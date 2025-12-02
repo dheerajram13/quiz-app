@@ -54,18 +54,44 @@ class QuizViewSet(viewsets.ReadOnlyModelViewSet):
 
     @extend_schema(
         summary="List all available quizzes",
-        description="Retrieve a list of all quizzes available to the authenticated user.",
+        description="Retrieve a list of all quizzes available to the authenticated user. Supports filtering by category, difficulty, and tags.",
+        parameters=[
+            OpenApiParameter(name='category', description='Filter by category ID', required=False, type=int),
+            OpenApiParameter(name='difficulty', description='Filter by difficulty level (easy, medium, hard)', required=False, type=str),
+            OpenApiParameter(name='tags', description='Filter by tag IDs (comma-separated)', required=False, type=str),
+        ],
         responses={200: QuizSerializer(many=True)}
     )
     def list(self, request, *args, **kwargs):
         """
-        List all available quizzes.
+        List all available quizzes with optional filtering.
+
+        Query Parameters:
+            category: Filter by category ID
+            difficulty: Filter by difficulty level (easy, medium, hard)
+            tags: Filter by tag IDs (comma-separated)
 
         Returns:
             Response with list of quizzes
         """
         logger.info(f"User {request.user.id} requested quiz list")
         quizzes = QuizService.get_all_quizzes()
+
+        # Apply filters
+        category_id = request.query_params.get('category')
+        difficulty = request.query_params.get('difficulty')
+        tags = request.query_params.get('tags')
+
+        if category_id:
+            quizzes = quizzes.filter(category_id=category_id)
+
+        if difficulty:
+            quizzes = quizzes.filter(difficulty_level=difficulty)
+
+        if tags:
+            tag_ids = [int(tid) for tid in tags.split(',')]
+            quizzes = quizzes.filter(tags__id__in=tag_ids).distinct()
+
         serializer = self.get_serializer(quizzes, many=True)
         return Response(serializer.data)
 
@@ -150,12 +176,13 @@ class QuizViewSet(viewsets.ReadOnlyModelViewSet):
             result = QuizService.submit_quiz(
                 user=request.user,
                 quiz_id=int(pk),
-                submitted_answers=serializer.validated_data['answers']
+                submitted_answers=serializer.validated_data['answers'],
+                started_at=serializer.validated_data.get('started_at')
             )
 
             logger.info(
                 f"User {request.user.id} completed quiz {pk} "
-                f"with score {result['score']}%"
+                f"with score {result['score']}% in {result.get('time_taken_seconds', 0)}s"
             )
 
             response_serializer = QuizSubmissionResponseSerializer(result)

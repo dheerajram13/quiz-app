@@ -6,10 +6,12 @@ interface SubmitResponse {
   total_points: number;
   earned_points: number;
   percentage: number;
+  results?: any[];
+  time_taken_seconds?: number;
 }
 
 interface UseQuizSubmitResult {
-  submitQuiz: (quizId: string, answers: Record<number, number[]>) => Promise<SubmitResponse>;
+  submitQuiz: (quizId: string, answers: Record<number, number[]>, startedAt?: string) => Promise<SubmitResponse>;
   submitting: boolean;
   error: string | null;
   result: SubmitResponse | null;
@@ -22,15 +24,19 @@ export const useQuizSubmit = (): UseQuizSubmitResult => {
 
   const submitQuiz = async (
     quizId: string,
-    answers: Record<number, number[]>
+    answers: Record<number, number[]>,
+    startedAt?: string
   ): Promise<SubmitResponse> => {
     try {
       setSubmitting(true);
       setError(null);
-      const payload = {
+      const payload: any = {
         quiz_id: quizId,
         answers,
       };
+      if (startedAt) {
+        payload.started_at = startedAt;
+      }
       const response = await api.post(`/quizzes/${quizId}/submit/`, payload);
       setResult(response.data);
       return response.data;

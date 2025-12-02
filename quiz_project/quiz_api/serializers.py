@@ -6,7 +6,23 @@ transformation between Python objects and JSON.
 """
 
 from rest_framework import serializers
-from .models import Quiz, Question, Answer, UserQuizAttempt
+from .models import Quiz, Question, Answer, UserQuizAttempt, Category, Tag
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    """Serializer for Category model."""
+
+    class Meta:
+        model = Category
+        fields = ['id', 'name', 'description']
+
+
+class TagSerializer(serializers.ModelSerializer):
+    """Serializer for Tag model."""
+
+    class Meta:
+        model = Tag
+        fields = ['id', 'name']
 
 
 class AnswerSerializer(serializers.ModelSerializer):
@@ -14,10 +30,19 @@ class AnswerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Answer
-        fields = ['id', 'text', 'is_correct']
+        fields = ['id', 'text', 'is_correct', 'explanation']
         extra_kwargs = {
-            'is_correct': {'write_only': True}  # Don't expose correct answers to users
+            'is_correct': {'write_only': True},  # Don't expose correct answers to users
+            'explanation': {'write_only': True}  # Don't show explanations before submission
         }
+
+
+class AnswerDetailSerializer(serializers.ModelSerializer):
+    """Serializer for Answer model with all details (for results view)."""
+
+    class Meta:
+        model = Answer
+        fields = ['id', 'text', 'is_correct', 'explanation']
 
 
 class QuestionSerializer(serializers.ModelSerializer):
@@ -34,10 +59,15 @@ class QuizSerializer(serializers.ModelSerializer):
     """Basic quiz serializer for list view."""
 
     question_count = serializers.SerializerMethodField()
+    category = CategorySerializer(read_only=True)
+    tags = TagSerializer(many=True, read_only=True)
 
     class Meta:
         model = Quiz
-        fields = ['id', 'title', 'description', 'created_at', 'question_count']
+        fields = [
+            'id', 'title', 'description', 'created_at', 'question_count',
+            'time_limit_minutes', 'difficulty_level', 'category', 'tags'
+        ]
 
     def get_question_count(self, obj) -> int:
         """Return the number of questions in the quiz."""
@@ -49,10 +79,15 @@ class QuizDetailSerializer(serializers.ModelSerializer):
 
     questions = QuestionSerializer(many=True, read_only=True)
     total_points = serializers.SerializerMethodField()
+    category = CategorySerializer(read_only=True)
+    tags = TagSerializer(many=True, read_only=True)
 
     class Meta:
         model = Quiz
-        fields = ['id', 'title', 'description', 'created_at', 'questions', 'total_points']
+        fields = [
+            'id', 'title', 'description', 'created_at', 'questions', 'total_points',
+            'time_limit_minutes', 'difficulty_level', 'category', 'tags'
+        ]
 
     def get_total_points(self, obj) -> int:
         """Calculate total possible points for the quiz."""
@@ -69,6 +104,11 @@ class QuizAnswerSubmissionSerializer(serializers.Serializer):
             allow_empty=True
         ),
         help_text="Dictionary mapping question IDs to lists of answer IDs"
+    )
+    started_at = serializers.DateTimeField(
+        required=False,
+        allow_null=True,
+        help_text="When the user started the quiz"
     )
 
     def validate_quiz_id(self, value):
@@ -138,6 +178,15 @@ class QuizSubmissionResponseSerializer(serializers.Serializer):
     )
     percentage = serializers.FloatField(
         help_text="Score percentage (same as score, for backward compatibility)"
+    )
+    results = serializers.ListField(
+        required=False,
+        help_text="Detailed results for each question"
+    )
+    time_taken_seconds = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        help_text="Time taken to complete the quiz in seconds"
     )
 
 

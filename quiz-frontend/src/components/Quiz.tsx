@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuiz } from '../hooks/useQuiz';
 import { useQuizSubmit } from '../hooks/useQuizSubmit';
@@ -8,12 +8,45 @@ const Quiz: React.FC = () => {
   const [answers, setAnswers] = useState<Record<number, number[]>>({});
   const [showResultModal, setShowResultModal] = useState(false);
   const [result, setResult] = useState<any>(null);
+  const [startedAt] = useState<Date>(new Date());
+  const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
+  const [showReview, setShowReview] = useState(false);
   const navigate = useNavigate();
 
   const { quiz, loading, error: fetchError } = useQuiz(id);
   const { submitQuiz, submitting, error: submitError } = useQuizSubmit();
 
   const error = fetchError || submitError;
+
+  // Initialize timer if quiz has time limit
+  useEffect(() => {
+    if (quiz?.time_limit_minutes) {
+      setTimeRemaining(quiz.time_limit_minutes * 60); // Convert to seconds
+    }
+  }, [quiz]);
+
+  // Timer countdown
+  useEffect(() => {
+    if (timeRemaining === null || timeRemaining <= 0) return;
+
+    const timer = setInterval(() => {
+      setTimeRemaining((prev) => {
+        if (prev === null || prev <= 1) {
+          handleSubmit(); // Auto-submit when time runs out
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [timeRemaining]);
+
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   const handleAnswerChange = (questionId: number, answerId: number, isSelected: boolean, questionType: string) => {
     setAnswers((prev) => {
@@ -34,7 +67,7 @@ const Quiz: React.FC = () => {
     if (!id) return;
 
     try {
-      const submitResult = await submitQuiz(id, answers);
+      const submitResult = await submitQuiz(id, answers, startedAt.toISOString());
       setResult(submitResult);
       setShowResultModal(true);
     } catch (err) {
@@ -89,10 +122,50 @@ const Quiz: React.FC = () => {
       <div className="card" style={{ marginBottom: 'var(--space-lg)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 'var(--space-md)' }}>
           <div style={{ flex: 1 }}>
-            <h1 style={{ marginBottom: 'var(--space-sm)' }}>{quiz.title}</h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)', marginBottom: 'var(--space-sm)' }}>
+              <h1 style={{ margin: 0 }}>{quiz.title}</h1>
+              {quiz.difficulty_level && (
+                <span style={{
+                  padding: '0.25rem 0.75rem',
+                  background: quiz.difficulty_level === 'easy' ? 'rgba(16, 185, 129, 0.2)' :
+                             quiz.difficulty_level === 'hard' ? 'rgba(239, 68, 68, 0.2)' :
+                             'rgba(251, 191, 36, 0.2)',
+                  color: quiz.difficulty_level === 'easy' ? '#10b981' :
+                         quiz.difficulty_level === 'hard' ? '#ef4444' : '#fbbf24',
+                  borderRadius: 'var(--radius-full)',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  textTransform: 'capitalize'
+                }}>
+                  {quiz.difficulty_level}
+                </span>
+              )}
+            </div>
             <p style={{ color: 'var(--text-muted)', marginBottom: 'var(--space-md)' }}>
               {quiz.description}
             </p>
+            {quiz.category && (
+              <div style={{ display: 'inline-block', padding: '0.5rem 1rem', background: 'rgba(99, 102, 241, 0.1)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-sm)' }}>
+                <span style={{ fontSize: '0.9rem', color: 'var(--primary-light)' }}>
+                  📚 {quiz.category.name}
+                </span>
+              </div>
+            )}
+            {quiz.tags && quiz.tags.length > 0 && (
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: 'var(--space-sm)' }}>
+                {quiz.tags.map((tag: any) => (
+                  <span key={tag.id} style={{
+                    padding: '0.25rem 0.75rem',
+                    background: 'rgba(139, 92, 246, 0.1)',
+                    borderRadius: 'var(--radius-full)',
+                    fontSize: '0.75rem',
+                    color: 'var(--accent)'
+                  }}>
+                    #{tag.name}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
           <div style={{
             padding: '0.75rem 1.5rem',
@@ -112,7 +185,8 @@ const Quiz: React.FC = () => {
           padding: 'var(--space-md)',
           background: 'rgba(99, 102, 241, 0.05)',
           borderRadius: 'var(--radius-md)',
-          border: '1px solid rgba(99, 102, 241, 0.2)'
+          border: '1px solid rgba(99, 102, 241, 0.2)',
+          flexWrap: 'wrap'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <span style={{ fontSize: '1.2rem' }}>📝</span>
@@ -127,6 +201,21 @@ const Quiz: React.FC = () => {
               {getAnsweredCount()} / {quiz.questions.length} Answered
             </span>
           </div>
+          {timeRemaining !== null && (
+            <>
+              <div style={{ borderLeft: '1px solid rgba(255, 255, 255, 0.1)' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontSize: '1.2rem' }}>⏱️</span>
+                <span style={{
+                  color: timeRemaining < 60 ? '#ef4444' : 'var(--text-muted)',
+                  fontWeight: timeRemaining < 60 ? 'bold' : 'normal',
+                  fontSize: timeRemaining < 60 ? '1.1rem' : '1rem'
+                }}>
+                  {formatTime(timeRemaining)} remaining
+                </span>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -287,7 +376,7 @@ const Quiz: React.FC = () => {
       </div>
 
       {/* Result Modal */}
-      {showResultModal && result && (
+      {showResultModal && result && !showReview && (
         <div style={{
           position: 'fixed',
           top: 0,
@@ -360,26 +449,194 @@ const Quiz: React.FC = () => {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: 'var(--space-md)' }}>
+            {result.time_taken_seconds && (
+              <div style={{
+                padding: 'var(--space-md)',
+                background: 'rgba(139, 92, 246, 0.1)',
+                borderRadius: 'var(--radius-md)',
+                marginBottom: 'var(--space-lg)',
+                border: '1px solid rgba(139, 92, 246, 0.3)'
+              }}>
+                <span style={{ fontSize: '1.2rem' }}>⏱️</span>
+                <span style={{ marginLeft: '0.5rem', color: 'var(--text-muted)' }}>
+                  Time Taken: {Math.floor(result.time_taken_seconds / 60)}m {result.time_taken_seconds % 60}s
+                </span>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
+              <button
+                className="btn btn-primary"
+                onClick={() => setShowReview(true)}
+                style={{ width: '100%' }}
+              >
+                📋 Review Answers
+              </button>
+              <div style={{ display: 'flex', gap: 'var(--space-md)' }}>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    setShowResultModal(false);
+                    navigate('/quizzes');
+                  }}
+                  style={{ flex: 1 }}
+                >
+                  Back to Quizzes
+                </button>
+                <button
+                  className="btn btn-primary"
+                  onClick={() => {
+                    setShowResultModal(false);
+                    navigate('/user-stats');
+                  }}
+                  style={{ flex: 1 }}
+                >
+                  View Stats
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Review Answers Modal */}
+      {showReview && result && result.results && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.8)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          backdropFilter: 'blur(4px)',
+          padding: 'var(--space-lg)',
+          overflowY: 'auto'
+        }}>
+          <div className="card" style={{
+            maxWidth: '800px',
+            width: '100%',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            animation: 'fadeIn 0.3s ease-out'
+          }}>
+            <div style={{ position: 'sticky', top: 0, background: 'var(--bg-card)', zIndex: 10, paddingBottom: 'var(--space-md)', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', marginBottom: 'var(--space-lg)' }}>
+              <h2 style={{ marginBottom: 'var(--space-sm)' }}>📋 Answer Review</h2>
+              <p style={{ color: 'var(--text-muted)', margin: 0 }}>
+                Score: {result.score}% | {result.earned_points}/{result.total_points} points
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)' }}>
+              {result.results.map((questionResult: any, index: number) => (
+                <div key={questionResult.question_id} style={{
+                  padding: 'var(--space-lg)',
+                  background: questionResult.is_correct ? 'rgba(16, 185, 129, 0.05)' : 'rgba(239, 68, 68, 0.05)',
+                  border: `2px solid ${questionResult.is_correct ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+                  borderRadius: 'var(--radius-md)'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 'var(--space-md)' }}>
+                    <div>
+                      <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>
+                        {questionResult.is_correct ? '✅' : '❌'}
+                      </div>
+                      <h3 style={{ marginBottom: 'var(--space-sm)', fontSize: '1.1rem' }}>
+                        Question {index + 1}
+                      </h3>
+                      <p style={{ color: 'var(--text-main)', marginBottom: 'var(--space-md)' }}>
+                        {questionResult.question_text}
+                      </p>
+                    </div>
+                    <div style={{
+                      padding: '0.5rem 1rem',
+                      background: questionResult.is_correct ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                      borderRadius: 'var(--radius-full)',
+                      fontSize: '0.9rem',
+                      fontWeight: 'bold',
+                      whiteSpace: 'nowrap',
+                      marginLeft: 'var(--space-md)'
+                    }}>
+                      {questionResult.points_awarded}/{questionResult.points}
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
+                    {questionResult.answers.map((answer: any) => (
+                      <div key={answer.id} style={{
+                        padding: 'var(--space-md)',
+                        background: answer.is_correct ? 'rgba(16, 185, 129, 0.1)' :
+                                   answer.was_selected && !answer.is_correct ? 'rgba(239, 68, 68, 0.1)' :
+                                   'rgba(255, 255, 255, 0.02)',
+                        border: `2px solid ${
+                          answer.is_correct ? 'rgba(16, 185, 129, 0.5)' :
+                          answer.was_selected && !answer.is_correct ? 'rgba(239, 68, 68, 0.5)' :
+                          'rgba(255, 255, 255, 0.05)'
+                        }`,
+                        borderRadius: 'var(--radius-md)'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'start', gap: 'var(--space-sm)' }}>
+                          <span style={{ fontSize: '1.2rem' }}>
+                            {answer.is_correct ? '✓' : answer.was_selected ? '✗' : '○'}
+                          </span>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ marginBottom: '0.5rem' }}>
+                              {answer.text}
+                              {answer.was_selected && (
+                                <span style={{
+                                  marginLeft: 'var(--space-sm)',
+                                  padding: '0.25rem 0.5rem',
+                                  background: 'rgba(99, 102, 241, 0.2)',
+                                  borderRadius: 'var(--radius-sm)',
+                                  fontSize: '0.75rem',
+                                  color: 'var(--primary-light)'
+                                }}>
+                                  Your answer
+                                </span>
+                              )}
+                            </div>
+                            {answer.explanation && (
+                              <div style={{
+                                padding: 'var(--space-sm)',
+                                background: 'rgba(99, 102, 241, 0.05)',
+                                borderRadius: 'var(--radius-sm)',
+                                fontSize: '0.9rem',
+                                color: 'var(--text-muted)',
+                                marginTop: 'var(--space-sm)',
+                                borderLeft: '3px solid var(--primary)'
+                              }}>
+                                <strong>Explanation:</strong> {answer.explanation}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', gap: 'var(--space-md)', marginTop: 'var(--space-lg)', position: 'sticky', bottom: 0, background: 'var(--bg-card)', paddingTop: 'var(--space-md)', borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
               <button
                 className="btn btn-secondary"
+                onClick={() => setShowReview(false)}
+                style={{ flex: 1 }}
+              >
+                Back to Results
+              </button>
+              <button
+                className="btn btn-primary"
                 onClick={() => {
+                  setShowReview(false);
                   setShowResultModal(false);
                   navigate('/quizzes');
                 }}
                 style={{ flex: 1 }}
               >
                 Back to Quizzes
-              </button>
-              <button
-                className="btn btn-primary"
-                onClick={() => {
-                  setShowResultModal(false);
-                  navigate('/user-stats');
-                }}
-                style={{ flex: 1 }}
-              >
-                View Stats
               </button>
             </div>
           </div>

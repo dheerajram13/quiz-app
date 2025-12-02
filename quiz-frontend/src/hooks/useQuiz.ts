@@ -14,12 +14,27 @@ interface Question {
   answers: Answer[];
 }
 
+interface Category {
+  id: number;
+  name: string;
+  description?: string;
+}
+
+interface Tag {
+  id: number;
+  name: string;
+}
+
 interface Quiz {
   id: number;
   title: string;
   description: string;
   questions: Question[];
   total_points: number;
+  time_limit_minutes?: number | null;
+  difficulty_level?: string;
+  category?: Category | null;
+  tags?: Tag[];
 }
 
 interface UseQuizResult {

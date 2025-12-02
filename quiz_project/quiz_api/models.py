@@ -9,6 +9,68 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.exceptions import ValidationError
+from django.utils import timezone
+
+
+class Category(models.Model):
+    """
+    Represents a category for organizing quizzes.
+
+    Attributes:
+        name: Category name
+        description: Category description
+        created_at: When the category was created
+    """
+
+    name = models.CharField(
+        max_length=100,
+        unique=True,
+        help_text="Category name (max 100 characters)"
+    )
+    description = models.TextField(
+        blank=True,
+        help_text="Description of the category"
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        help_text="Timestamp when the category was created"
+    )
+
+    class Meta:
+        verbose_name = "Category"
+        verbose_name_plural = "Categories"
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
+class Tag(models.Model):
+    """
+    Represents a tag for organizing and filtering quizzes.
+
+    Attributes:
+        name: Tag name
+        created_at: When the tag was created
+    """
+
+    name = models.CharField(
+        max_length=50,
+        unique=True,
+        help_text="Tag name (max 50 characters)"
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        help_text="Timestamp when the tag was created"
+    )
+
+    class Meta:
+        verbose_name = "Tag"
+        verbose_name_plural = "Tags"
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
 
 
 class Quiz(models.Model):
@@ -20,7 +82,21 @@ class Quiz(models.Model):
         description: Detailed description of the quiz
         created_at: Timestamp when the quiz was created
         is_active: Whether the quiz is available for users
+        time_limit_minutes: Time limit in minutes (optional)
+        difficulty_level: Difficulty level of the quiz
+        category: Primary category for this quiz
+        tags: Tags associated with this quiz
     """
+
+    DIFFICULTY_EASY = 'easy'
+    DIFFICULTY_MEDIUM = 'medium'
+    DIFFICULTY_HARD = 'hard'
+
+    DIFFICULTY_CHOICES = [
+        (DIFFICULTY_EASY, 'Easy'),
+        (DIFFICULTY_MEDIUM, 'Medium'),
+        (DIFFICULTY_HARD, 'Hard'),
+    ]
 
     title = models.CharField(
         max_length=200,
@@ -36,6 +112,32 @@ class Quiz(models.Model):
     is_active = models.BooleanField(
         default=True,
         help_text="Whether the quiz is available for users to take"
+    )
+    time_limit_minutes = models.IntegerField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(1), MaxValueValidator(180)],
+        help_text="Time limit in minutes (1-180, optional)"
+    )
+    difficulty_level = models.CharField(
+        max_length=10,
+        choices=DIFFICULTY_CHOICES,
+        default=DIFFICULTY_MEDIUM,
+        help_text="Difficulty level of the quiz"
+    )
+    category = models.ForeignKey(
+        Category,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='quizzes',
+        help_text="Primary category for this quiz"
+    )
+    tags = models.ManyToManyField(
+        Tag,
+        blank=True,
+        related_name='quizzes',
+        help_text="Tags associated with this quiz"
     )
 
     class Meta:
@@ -149,6 +251,7 @@ class Answer(models.Model):
         question: The question this answer belongs to
         text: The answer text
         is_correct: Whether this is a correct answer
+        explanation: Optional explanation for why this answer is correct/incorrect
     """
 
     question = models.ForeignKey(
@@ -164,6 +267,10 @@ class Answer(models.Model):
     is_correct = models.BooleanField(
         default=False,
         help_text="Whether this is a correct answer"
+    )
+    explanation = models.TextField(
+        blank=True,
+        help_text="Optional explanation for this answer"
     )
     order = models.IntegerField(
         default=0,
@@ -194,7 +301,7 @@ class UserQuizAttempt(models.Model):
     """
     Represents a user's attempt at completing a quiz.
 
-    Tracks the score achieved and when the quiz was completed.
+    Tracks the score achieved, answers submitted, and when the quiz was completed.
     """
 
     user = models.ForeignKey(
@@ -215,9 +322,22 @@ class UserQuizAttempt(models.Model):
         validators=[MinValueValidator(0), MaxValueValidator(100)],
         help_text="Score as a percentage (0-100)"
     )
+    answers_data = models.JSONField(
+        default=dict,
+        help_text="JSON data storing user's answers and correctness"
+    )
+    started_at = models.DateTimeField(
+        default=timezone.now,
+        help_text="When the quiz was started"
+    )
     completed_at = models.DateTimeField(
         auto_now_add=True,
         help_text="When the quiz was completed"
+    )
+    time_taken_seconds = models.IntegerField(
+        null=True,
+        blank=True,
+        help_text="Time taken to complete the quiz in seconds"
     )
 
     class Meta:
