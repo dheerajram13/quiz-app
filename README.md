@@ -28,19 +28,41 @@ A production-ready, full-stack quiz application built with **Django REST Framewo
 ## ✨ Features
 
 ### Core Functionality
-- **User Authentication**: JWT-based authentication with automatic token refresh
+- **User Authentication**: JWT-based authentication with automatic token refresh and protected routes
 - **Quiz Management**: Create, retrieve, and manage quizzes through a RESTful API
 - **Multiple Question Types**:
   - Single-choice (radio buttons)
   - Multiple-choice (checkboxes)
   - Select-words (keyword identification)
+- **Advanced Filtering & Search**:
+  - Filter quizzes by difficulty level (Easy, Medium, Hard)
+  - Filter quizzes by category
+  - Real-time quiz count updates
+  - Clear filters functionality
+- **Quiz Organization**:
+  - Categories for grouping related quizzes
+  - Tags for flexible quiz organization and discovery
+  - Difficulty levels for appropriate challenge selection
+  - Time limits for timed assessments
 - **Automatic Scoring**: Server-side answer validation and percentage-based scoring
 - **Performance Tracking**: User statistics including average scores, total quizzes, and attempt history
-- **Responsive UI**: Material-UI based interface optimized for all devices
+- **Responsive UI**: Modern, gradient-based interface with smooth animations optimized for all devices
+- **Enhanced User Experience**:
+  - Persistent authentication with AuthContext
+  - Error boundaries for graceful error handling
+  - Custom React hooks for data management
+  - Loading states and spinners
+  - Sticky navigation with active route highlighting
+  - Card-based quiz display with hover effects
 
 ### Technical Excellence
 - **Clean Architecture**: Separation of concerns with distinct layers (Presentation, Business Logic, Data Access)
 - **Service Layer Pattern**: Business logic isolated in dedicated service classes
+- **React Best Practices**:
+  - Custom hooks (useQuiz, useQuizList, useQuizSubmit)
+  - Context API for global state (AuthContext)
+  - Error Boundary component for error handling
+  - Layout component for consistent UI structure
 - **Comprehensive Testing**: Unit and integration tests with 80%+ code coverage
 - **API Documentation**: Auto-generated OpenAPI/Swagger documentation
 - **Type Safety**: TypeScript frontend with strict type checking
@@ -58,7 +80,10 @@ The application follows **Clean Architecture** principles with clear separation 
 ### Architecture Layers
 
 1. **Client Layer** (React + TypeScript)
-   - React components with Material-UI
+   - React components with custom styling and animations
+   - Context API for state management (AuthContext)
+   - Custom hooks for data fetching and management
+   - Error boundaries for graceful error handling
    - JWT authentication management
    - API client with interceptors
 
@@ -74,9 +99,11 @@ The application follows **Clean Architecture** principles with clear separation 
    - `QuizAttemptService`: Attempt management
 
 4. **Data Access Layer** (Django ORM)
-   - Models: `Quiz`, `Question`, `Answer`, `UserQuizAttempt`
+   - Models: `Quiz`, `Question`, `Answer`, `UserQuizAttempt`, `Category`, `Tag`
    - Database abstraction with ORM
    - Query optimization with select_related/prefetch_related
+   - Many-to-many relationships for tags
+   - Foreign key relationships for categories
 
 5. **Database Layer**
    - PostgreSQL (production) / SQLite (development)
@@ -218,10 +245,18 @@ quiz-app/
 │   ├── public/
 │   ├── src/
 │   │   ├── components/           # React components
-│   │   │   ├── Login.tsx
-│   │   │   ├── QuizList.tsx
-│   │   │   ├── Quiz.tsx
-│   │   │   └── UserStats.tsx
+│   │   │   ├── ErrorBoundary.tsx # Error handling component
+│   │   │   ├── Layout.tsx       # Layout wrapper with navigation
+│   │   │   ├── Login.tsx        # Authentication page
+│   │   │   ├── QuizList.tsx     # Quiz listing with filters
+│   │   │   ├── Quiz.tsx         # Quiz taking interface
+│   │   │   └── UserStats.tsx    # User statistics dashboard
+│   │   ├── contexts/            # React Context providers
+│   │   │   └── AuthContext.tsx  # Authentication state management
+│   │   ├── hooks/               # Custom React hooks
+│   │   │   ├── useQuiz.ts       # Quiz data fetching hook
+│   │   │   ├── useQuizList.ts   # Quiz list management hook
+│   │   │   └── useQuizSubmit.ts # Quiz submission hook
 │   │   ├── services/
 │   │   │   └── api.tsx          # Axios API client
 │   │   ├── App.tsx              # Main app component
