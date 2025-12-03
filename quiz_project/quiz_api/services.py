@@ -5,7 +5,6 @@ This module implements the Service Layer pattern to separate business logic
 from views, following SOLID principles (Single Responsibility Principle).
 """
 
-import logging
 from typing import Dict, List, Tuple, Optional
 from decimal import Decimal
 from datetime import datetime
@@ -16,9 +15,7 @@ from django.utils import timezone
 from .models import Quiz, Question, UserQuizAttempt
 from .exceptions import QuizNotFoundException, InvalidSubmissionError
 from .scoring_strategies import ScoringStrategyFactory
-
-
-logger = logging.getLogger(__name__)
+from .logger import logger
 
 
 class QuizScoringService:

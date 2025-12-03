@@ -5,7 +5,6 @@ This module contains API viewsets that delegate business logic to services,
 following the clean architecture pattern and SOLID principles.
 """
 
-import logging
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -23,8 +22,7 @@ from .serializers import (
 )
 from .services import QuizService, UserStatsService
 from .exceptions import QuizNotFoundException, InvalidSubmissionError
-
-logger = logging.getLogger(__name__)
+from .logger import logger
 
 
 class QuizViewSet(viewsets.ReadOnlyModelViewSet):

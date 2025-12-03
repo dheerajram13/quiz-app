@@ -58,9 +58,7 @@ def custom_exception_handler(exc, context):
     Provides consistent error response format across the API.
     """
     from rest_framework.views import exception_handler
-    import logging
-
-    logger = logging.getLogger(__name__)
+    from .logger import logger
 
     # Call REST framework's default exception handler first
     response = exception_handler(exc, context)
