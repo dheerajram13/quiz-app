@@ -150,9 +150,89 @@ python manage.py check
 DJANGO_ENV=prod python manage.py check
 ```
 
+## Database Routers
+
+This project includes database routers for advanced multi-database configurations. See [quiz_project/db_routers.py](../db_routers.py) for implementation details.
+
+### Available Routers
+
+1. **PrimaryReplicaRouter** - Read/write splitting
+   - All writes go to `default` (primary)
+   - All reads go to `replica` database
+   - Improves performance by distributing read load
+
+2. **AppBasedRouter** - Route by Django app
+   - Different apps use different databases
+   - Useful for microservices architecture
+   - Configure with `APP_DB_ROUTING` setting
+
+3. **ModelBasedRouter** - Route by specific models
+   - Fine-grained control per model
+   - Configure with `MODEL_DB_ROUTING` setting
+   - Example: Analytics models to analytics DB
+
+4. **HybridRouter** - Combines app-based + read/write splitting
+   - Best of both worlds
+   - Configure with `HYBRID_DB_ROUTING` setting
+
+### Using Database Routers
+
+To enable a router, uncomment the appropriate configuration in [base.py](base.py):
+
+```python
+# Example: Enable read/write splitting
+DATABASE_ROUTERS = ['quiz_project.db_routers.PrimaryReplicaRouter']
+
+# Configure databases in dev.py or prod.py
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'quiz_db',
+        'HOST': 'primary.db.server.com',
+        ...
+    },
+    'replica': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'quiz_db',
+        'HOST': 'replica.db.server.com',
+        ...
+    }
+}
+```
+
+See [db_examples.py](db_examples.py) for complete configuration examples.
+
+### Working with Multiple Databases
+
+```bash
+# Run migrations on specific database
+python manage.py migrate --database=default
+python manage.py migrate --database=analytics_db
+
+# Manually specify database in queries
+User.objects.using('replica').all()
+quiz.save(using='default')
+
+# Database routing happens automatically with routers configured
+Quiz.objects.all()  # Reads from replica automatically
+quiz.save()         # Writes to primary automatically
+```
+
+### Testing with Multiple Databases
+
+```bash
+# Test database creation is automatic
+python manage.py test
+
+# Flush specific database
+python manage.py flush --database=default
+```
+
 ## Notes
 
 - The `__init__.py` file automatically detects the environment based on `DJANGO_ENV`
 - If `DJANGO_ENV` is not set, it defaults to development
 - Production settings will raise `ImproperlyConfigured` errors if required variables are missing
 - Never commit your `.env` file or production secrets to version control
+- Database routers are evaluated in the order they appear in `DATABASE_ROUTERS`
+- For multi-database setups, ensure proper replication is configured at the database level

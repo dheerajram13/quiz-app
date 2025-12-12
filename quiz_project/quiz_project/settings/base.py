@@ -171,3 +171,43 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Create logs directory if it doesn't exist
 LOGS_DIR = BASE_DIR / 'logs'
 LOGS_DIR.mkdir(exist_ok=True)
+
+
+# Database Routers Configuration
+# Uncomment and configure based on your multi-database needs
+# See quiz_project/db_routers.py for available router classes and documentation
+
+# DATABASE_ROUTERS = []
+
+# Example configurations (uncomment and customize as needed):
+
+# 1. Read/Write Splitting (Primary-Replica setup)
+# DATABASE_ROUTERS = ['quiz_project.db_routers.PrimaryReplicaRouter']
+
+# 2. App-based routing (Different apps use different databases)
+# DATABASE_ROUTERS = ['quiz_project.db_routers.AppBasedRouter']
+# APP_DB_ROUTING = {
+#     'quiz_api': 'default',
+#     'analytics': 'analytics_db',
+# }
+
+# 3. Model-based routing (Fine-grained control per model)
+# DATABASE_ROUTERS = ['quiz_project.db_routers.ModelBasedRouter']
+# MODEL_DB_ROUTING = {
+#     'quiz_api.UserActivity': 'analytics_db',
+#     'quiz_api.AuditLog': 'logging_db',
+#     '_default': 'default',
+# }
+
+# 4. Hybrid routing (App-based + Read/Write splitting)
+# DATABASE_ROUTERS = ['quiz_project.db_routers.HybridRouter']
+# HYBRID_DB_ROUTING = {
+#     'quiz_api': {'primary': 'default', 'replica': 'default_replica'},
+#     'analytics': {'primary': 'analytics_db', 'replica': 'analytics_replica'},
+# }
+
+# 5. Multiple routers (evaluated in order)
+# DATABASE_ROUTERS = [
+#     'quiz_project.db_routers.ModelBasedRouter',
+#     'quiz_project.db_routers.PrimaryReplicaRouter',
+# ]
