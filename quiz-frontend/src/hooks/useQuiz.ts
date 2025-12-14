@@ -1,48 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
-
-interface Answer {
-  id: number;
-  text: string;
-}
-
-interface Question {
-  id: number;
-  text: string;
-  question_type: string;
-  points: number;
-  answers: Answer[];
-}
-
-interface Category {
-  id: number;
-  name: string;
-  description?: string;
-}
-
-interface Tag {
-  id: number;
-  name: string;
-}
-
-interface Quiz {
-  id: number;
-  title: string;
-  description: string;
-  questions: Question[];
-  total_points: number;
-  time_limit_minutes?: number | null;
-  difficulty_level?: string;
-  category?: Category | null;
-  tags?: Tag[];
-}
-
-interface UseQuizResult {
-  quiz: Quiz | null;
-  loading: boolean;
-  error: string | null;
-  refetch: () => Promise<void>;
-}
+import { Quiz, UseQuizResult } from '../types';
+import { getErrorMessage } from '../types/errors';
 
 export const useQuiz = (quizId: string | undefined): UseQuizResult => {
   const [quiz, setQuiz] = useState<Quiz | null>(null);
@@ -59,15 +18,11 @@ export const useQuiz = (quizId: string | undefined): UseQuizResult => {
     try {
       setLoading(true);
       setError(null);
-      const response = await api.get(`/quizzes/${quizId}/`);
+      const response = await api.get<Quiz>(`/quizzes/${quizId}/`);
       setQuiz(response.data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error fetching quiz:', err);
-      const errorMessage =
-        err.response?.data?.error?.message ||
-        err.response?.data?.detail ||
-        'Failed to load quiz. Please try again.';
-      setError(errorMessage);
+      setError(getErrorMessage(err, 'Failed to load quiz. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -75,6 +30,7 @@ export const useQuiz = (quizId: string | undefined): UseQuizResult => {
 
   useEffect(() => {
     fetchQuiz();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quizId]);
 
   return {

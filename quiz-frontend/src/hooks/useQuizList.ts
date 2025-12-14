@@ -1,20 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
-
-interface QuizListItem {
-  id: number;
-  title: string;
-  description: string;
-  question_count: number;
-  created_at: string;
-}
-
-interface UseQuizListResult {
-  quizzes: QuizListItem[];
-  loading: boolean;
-  error: string | null;
-  refetch: () => Promise<void>;
-}
+import { QuizListItem, UseQuizListResult } from '../types';
+import { getErrorMessage } from '../types/errors';
 
 export const useQuizList = (): UseQuizListResult => {
   const [quizzes, setQuizzes] = useState<QuizListItem[]>([]);
@@ -25,15 +12,11 @@ export const useQuizList = (): UseQuizListResult => {
     try {
       setLoading(true);
       setError(null);
-      const response = await api.get('/quizzes/');
+      const response = await api.get<QuizListItem[]>('/quizzes/');
       setQuizzes(response.data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error fetching quizzes:', err);
-      const errorMessage =
-        err.response?.data?.error?.message ||
-        err.response?.data?.detail ||
-        'Failed to load quizzes. Please try again.';
-      setError(errorMessage);
+      setError(getErrorMessage(err, 'Failed to load quizzes. Please try again.'));
     } finally {
       setLoading(false);
     }

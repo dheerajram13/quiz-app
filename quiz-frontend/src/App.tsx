@@ -6,6 +6,7 @@ import Login from './components/Login';
 import QuizList from './components/QuizList';
 import Quiz from './components/Quiz';
 import UserStats from './components/UserStats';
+import Layout from './components/Layout';
 
 interface ProtectedRouteProps {
   children: React.ReactElement;
@@ -20,8 +21,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
   return isAuthenticated ? children : <Navigate to="/login" />;
 };
-
-import Layout from './components/Layout';
 
 const AppRoutes: React.FC = () => {
   const { isAuthenticated } = useAuth();

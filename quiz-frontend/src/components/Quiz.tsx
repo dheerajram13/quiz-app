@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuiz } from '../hooks/useQuiz';
 import { useQuizSubmit } from '../hooks/useQuizSubmit';
+import { QuizSubmitResponse, Tag } from '../types';
 
 const Quiz: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [answers, setAnswers] = useState<Record<number, number[]>>({});
   const [showResultModal, setShowResultModal] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<QuizSubmitResponse | null>(null);
   const [startedAt] = useState<Date>(new Date());
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [showReview, setShowReview] = useState(false);
@@ -63,21 +64,21 @@ const Quiz: React.FC = () => {
     });
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (): Promise<void> => {
     if (!id) return;
 
     try {
       const submitResult = await submitQuiz(id, answers, startedAt.toISOString());
       setResult(submitResult);
       setShowResultModal(true);
-    } catch (err) {
-      console.error('Submission failed');
+    } catch (err: unknown) {
+      console.error('Submission failed', err);
     }
   };
 
-  const getAnsweredCount = () => {
+  const getAnsweredCount = (): number => {
     return Object.keys(answers).filter(key => {
-      const answerArray = answers[parseInt(key)];
+      const answerArray = answers[parseInt(key, 10)];
       return answerArray && answerArray.length > 0;
     }).length;
   };
@@ -153,7 +154,7 @@ const Quiz: React.FC = () => {
             )}
             {quiz.tags && quiz.tags.length > 0 && (
               <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: 'var(--space-sm)' }}>
-                {quiz.tags.map((tag: any) => (
+                {quiz.tags.map((tag: Tag) => (
                   <span key={tag.id} style={{
                     padding: '0.25rem 0.75rem',
                     background: 'rgba(139, 92, 246, 0.1)',
@@ -531,7 +532,7 @@ const Quiz: React.FC = () => {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)' }}>
-              {result.results.map((questionResult: any, index: number) => (
+              {result.results.map((questionResult, index: number) => (
                 <div key={questionResult.question_id} style={{
                   padding: 'var(--space-lg)',
                   background: questionResult.is_correct ? 'rgba(16, 185, 129, 0.05)' : 'rgba(239, 68, 68, 0.05)',
@@ -564,7 +565,7 @@ const Quiz: React.FC = () => {
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
-                    {questionResult.answers.map((answer: any) => (
+                    {questionResult.answers.map((answer) => (
                       <div key={answer.id} style={{
                         padding: 'var(--space-md)',
                         background: answer.is_correct ? 'rgba(16, 185, 129, 0.1)' :

@@ -9,15 +9,16 @@ const Login: React.FC = () => {
   const { login, isLoading } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogin = async () => {
+  const handleLogin = async (): Promise<void> => {
     try {
       setLocalError(null);
       await login(username, password);
       console.log('Login successful');
       navigate('/quizzes');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Login failed:', error);
-      setLocalError(error.message);
+      const errorMessage = error instanceof Error ? error.message : 'Login failed';
+      setLocalError(errorMessage);
     }
   };
 

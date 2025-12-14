@@ -1,12 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import api from '../services/api';
 import { storage } from '../constants/storage';
-
-interface User {
-  id: number;
-  username: string;
-  email?: string;
-}
+import { User, AuthTokens } from '../types';
+import { getErrorMessage } from '../types/errors';
 
 interface AuthContextType {
   user: User | null;
@@ -39,14 +35,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Check if user is authenticated on mount
   useEffect(() => {
-    const checkAuth = async () => {
+    const checkAuth = async (): Promise<void> => {
       const accessToken = storage.getAccessToken();
       if (accessToken) {
         try {
           // Optionally, fetch user details from a /me endpoint
           // For now, just set authenticated state
           setIsAuthenticated(true);
-        } catch (err) {
+        } catch (err: unknown) {
           console.error('Auth check failed:', err);
           storage.clearTokens();
           setIsAuthenticated(false);
@@ -64,7 +60,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setError(null);
       setIsLoading(true);
-      const response = await api.post('/token/', { username, password });
+      const response = await api.post<AuthTokens>('/token/', { username, password });
 
       const { access, refresh } = response.data;
       storage.setTokens(access, refresh);
@@ -73,8 +69,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // setUser(response.data.user);
 
       setIsAuthenticated(true);
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.detail || 'Login failed. Please check your credentials.';
+    } catch (err: unknown) {
+      const errorMessage = getErrorMessage(err, 'Login failed. Please check your credentials.');
       setError(errorMessage);
       throw new Error(errorMessage);
     } finally {

@@ -1,25 +1,33 @@
 {
   "compilerOptions": {
-    "target": "es5",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
-    "allowJs": true,
-    "skipLibCheck": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    "noFallthroughCasesInSwitch": true,
-    "module": "esnext",
+    /* Language and Environment */
+    "target": "ES2020",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+
+    /* Modules */
+    "module": "ESNext",
     "moduleResolution": "node",
     "resolveJsonModule": true,
-    "isolatedModules": true,
+
+    /* JavaScript Support */
+    "allowJs": true,
+    "checkJs": false,
+
+    /* Emit */
     "noEmit": true,
-    "jsx": "react-jsx",
-    /* Additional Strict Type-Checking Options */
+    "sourceMap": true,
+    "removeComments": false,
+    "importHelpers": true,
+
+    /* Interop Constraints */
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+
+    /* Type Checking - Strict Mode */
+    "strict": true,
     "noImplicitAny": true,
     "strictNullChecks": true,
     "strictFunctionTypes": true,
@@ -27,17 +35,33 @@
     "strictPropertyInitialization": true,
     "noImplicitThis": true,
     "alwaysStrict": true,
-    /* Additional Checks */
+    "useUnknownInCatchVariables": true,
+
+    /* Type Checking - Additional Checks */
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true,
-    "types": [
-      "node",
-      "jest",
-      "react",
-      "react-dom"
-    ]
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": false,
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false,
+
+    /* Completeness */
+    "skipLibCheck": true,
+
+    /* Advanced */
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@components/*": ["src/components/*"],
+      "@hooks/*": ["src/hooks/*"],
+      "@services/*": ["src/services/*"],
+      "@contexts/*": ["src/contexts/*"],
+      "@types/*": ["src/types/*"],
+      "@constants/*": ["src/constants/*"]
+    }
   },
   "include": [
     "src"
@@ -45,6 +69,8 @@
   "exclude": [
     "node_modules",
     "build",
-    "dist"
+    "dist",
+    "**/*.spec.ts",
+    "**/*.spec.tsx"
   ]
 }
