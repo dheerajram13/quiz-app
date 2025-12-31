@@ -55,20 +55,6 @@ A production-ready, full-stack quiz application built with **Django REST Framewo
   - Sticky navigation with active route highlighting
   - Card-based quiz display with hover effects
 
-### Technical Excellence
-- **Clean Architecture**: Separation of concerns with distinct layers (Presentation, Business Logic, Data Access)
-- **Service Layer Pattern**: Business logic isolated in dedicated service classes
-- **React Best Practices**:
-  - Custom hooks (useQuiz, useQuizList, useQuizSubmit)
-  - Context API for global state (AuthContext)
-  - Error Boundary component for error handling
-  - Layout component for consistent UI structure
-- **Comprehensive Testing**: Unit and integration tests with 80%+ code coverage
-- **API Documentation**: Auto-generated OpenAPI/Swagger documentation
-- **Type Safety**: TypeScript frontend with strict type checking
-- **Logging & Monitoring**: Structured logging for debugging and audit trails
-- **Containerization**: Docker and Docker Compose for easy deployment
-
 ---
 
 ## 🏗️ System Architecture
